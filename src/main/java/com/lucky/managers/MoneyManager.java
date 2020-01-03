@@ -1,10 +1,10 @@
 package com.lucky.managers;
 
-import com.lucky.LuckyEconomy;
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
+import javax.security.auth.login.Configuration;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.lucky.LuckyEconomy.*;
@@ -29,23 +29,31 @@ public class MoneyManager {
     }
 
     public static void checkPlayer(Player p) {
-        if(money.getString("Dinheiro." + p.getName()) == null) newAccount(p);
+        if (money.getString("Dinheiro." + p.getName()) == null) newAccount(p);
     }
 
     public static void payMoney(Player sender, double amount, Player recipient) {
+
         checkPlayer(sender);
         checkPlayer(recipient);
 
         double moneysender = getMoney(sender);
         double moneyrecipient = getMoney(recipient);
 
-        if(moneysender < amount) sender.sendMessage("§cVocê não tem dinheiro suficiente.");
+        double moneyformatado1 = (moneysender - amount);
+        double moneyformatado2 = (moneyrecipient + amount);
+
+        if (moneysender < amount) {
+            sender.sendMessage("§cVocê não tem dinheiro suficiente.");
+            return;
+        }
+
         String path = "Dinheiro." + sender.getName();
+        String path2 = "Dinheiro." + recipient.getName();
 
         money.set(path, moneysender - amount);
-        money.set(path, moneyrecipient + amount);
-        sender.sendMessage("§eVocê enviou §6R$" + format(amount) + " §ereais para §6" + recipient.getName());
-        recipient.sendMessage("§eVocê recebeu §6R$" + format(amount) + " §ereais de§6" + sender.getName());
+        money.set(path2, moneyrecipient + amount);
+
         saveMoneyFile();
 
     }
@@ -56,4 +64,8 @@ public class MoneyManager {
         saveMoneyFile();
     }
 
+    public static void removeMoney(Player p, double amount) {
+        String path = "Dinheiro." + p.getName();
+        money.set(path, getMoney(p) - amount);
+    }
 }

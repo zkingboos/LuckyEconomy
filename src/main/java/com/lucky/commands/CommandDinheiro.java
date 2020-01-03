@@ -6,8 +6,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import static com.lucky.managers.MoneyManager.getMoney;
-import static com.lucky.managers.MoneyManager.setMoney;
+import static com.lucky.managers.MoneyManager.*;
 import static com.lucky.utils.MessageUtils.prefix;
 import static com.lucky.utils.MoneyFormatter.format;
 
@@ -32,7 +31,7 @@ public class CommandDinheiro implements CommandExecutor {
 
         if (args.length == 1) {
             if (args[0].equalsIgnoreCase("ver")) {
-                p.sendMessage(prefix + "§fVocê tem §aR$" + getMoney(p) + " §freais.");
+                p.sendMessage(prefix + "§fVocê tem §aR$" + format(getMoney(p)) + " §freais.");
             }
         }
         if (args.length == 2) {
@@ -76,6 +75,25 @@ public class CommandDinheiro implements CommandExecutor {
                         p.sendMessage("§cEste usuário está offline.");
                         return false;
                     }
+                }
+            }
+            if(args[0].equalsIgnoreCase("pagar")) {
+                String targetName = args[1];
+                double amount = Double.parseDouble(args[2]);
+                Player target = Bukkit.getPlayer(targetName);
+
+                if(target == p) {
+                    sender.sendMessage("§cNão pode enviar dinheiro pra si mesmo.");
+                    return false;
+                }
+
+                if (target != null) {
+                    payMoney(p, amount, target);
+                    p.sendMessage(prefix + "§fVocê enviou §aR$" + amount + " §fpara §a" + target.getName());
+                    target.sendMessage(prefix + "§fVocê recebeu §aR$" + amount + " §fde §a" + p.getName());
+                } else {
+                    p.sendMessage("§cEste usuário está offline.");
+                    return false;
                 }
             }
         }

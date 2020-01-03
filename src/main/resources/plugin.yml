@@ -1,0 +1,5 @@
+name: LuckyEconomy
+version: ${project.version}
+main: com.lucky.LuckyEconomy
+commands:
+  dinheiro:

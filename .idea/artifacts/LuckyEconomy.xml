@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="LuckyEconomy">
+    <output-path>$PROJECT_DIR$/../Desktop/Teste/plugins</output-path>
+    <root id="archive" name="LuckyEconomy.jar">
+      <element id="module-output" name="LuckyEconomy" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Downloads/spigot-1.7.10-SNAPSHOT-b1657.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

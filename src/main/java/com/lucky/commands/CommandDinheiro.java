@@ -34,6 +34,13 @@ public class CommandDinheiro implements CommandExecutor {
             if (args[0].equalsIgnoreCase("ver")) {
                 p.sendMessage(prefix + "§fVocê tem §aR$" + format(getMoney(p.getName())));
             }
+            if(args[0].equalsIgnoreCase("ranking")) {
+                //p.sendMessage("");
+                //p.sendMessage("       §a[LuckyRanking] §7- §fTop 10 Dinheiro \n ");
+                p.sendMessage(String.valueOf(getTops()));
+                //p.sendMessage("");
+
+            }
         }
 
         if (args.length == 2) {

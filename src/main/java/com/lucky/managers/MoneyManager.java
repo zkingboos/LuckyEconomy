@@ -3,6 +3,7 @@ package com.lucky.managers;
 import com.lucky.sql.SQLConnection;
 import com.lucky.utils.MessageUtils;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.entity.Player;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,6 +11,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.lucky.utils.MoneyFormatter.format;
 
 
 public class MoneyManager {
@@ -86,11 +89,13 @@ public class MoneyManager {
         try {
             stm = con.prepareStatement("SELECT * FROM `dinheiro` ORDER BY `quantia` DESC");
             ResultSet rs = stm.executeQuery();
+
             int i = 0;
             while (rs.next()) {
                 if (i <= 10){
                     i++;
                     tops.add("§f" + i + "º §3" + rs.getString("player") + ":§b " + rs.getDouble("quantia"));
+                    //tops.add("§a" + i + "§2º §a" + rs.getString("player").substring(0, 1).toUpperCase() + rs.getString("player").substring(1) + " §7»§f " + format(rs.getDouble("quantia")));
                 }
             }
         } catch (SQLException e) {

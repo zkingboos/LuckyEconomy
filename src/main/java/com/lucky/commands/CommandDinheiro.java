@@ -1,5 +1,6 @@
 package com.lucky.commands;
 
+import com.lucky.events.EventPlayerJoin;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -18,84 +19,93 @@ public class CommandDinheiro implements CommandExecutor {
         if (args.length == 0) {
             p.sendMessage("");
             p.sendMessage("§2» §a/dinheiro ver|/dinheiro ver [player] §a- §2(Vê o seu dinheiro)");
-            p.sendMessage("§2» §a/dinheiro pagar [quantidade] §a- §2(Pagar um player)");
+            p.sendMessage("§2» §a/dinheiro pagar [player] [quantidade] §a- §2(Pagar um player)");
             p.sendMessage("");
             if (p.hasPermission("LuckyEconomy.Staff")) {
-                p.sendMessage("§4» §c/dinheiro setar [player] §4- §c(Setar dinheiro para um player) ");
-                p.sendMessage("§4» §c/dinheiro remover [player] §4- §c(Remover dinheiro de um player) ");
-                p.sendMessage("§4» §c/dinheiro adicionar [player] §4- §c(Adicionar dinheiro para um player) ");
+                p.sendMessage("§4» §c/dinheiro setar [player] [quantia] §4- §c(Setar dinheiro para um player) ");
+                p.sendMessage("§4» §c/dinheiro remover [player] [quantia] §4- §c(Remover dinheiro de um player) ");
+                p.sendMessage("§4» §c/dinheiro adicionar [player] [quantia] §4- §c(Adicionar dinheiro para um player) ");
+                p.sendMessage("§4» §c/dinheiro deletar [player] §4- §c(Remover um player do Banco de Dados) ");
                 p.sendMessage("");
             }
-            return false;
         }
 
         if (args.length == 1) {
             if (args[0].equalsIgnoreCase("ver")) {
-                p.sendMessage(prefix + "§fVocê tem §aR$" + format(getMoney(p)) + " §freais.");
+                p.sendMessage(prefix + "§fVocê tem §aR$" + format(getMoney(p.getName())));
             }
         }
+
         if (args.length == 2) {
             if (args[0].equalsIgnoreCase("ver")) {
-                String targetName = args[1];
-                Player target = Bukkit.getPlayer(targetName);
-                if (target != null) {
-                    p.sendMessage(prefix + "§a" + target.getName() + " §ftem §aR$" + format(getMoney(target)) + " §freais.");
-                } else {
-                    p.sendMessage("§cEste usuário está offline");
-                    return false;
-                }
-                return false;
+                Player target = Bukkit.getPlayer(args[1]);
+                p.sendMessage(prefix + target.getName() + " §ftem §aR$" + format(getMoney(target.getName())));
+            }
+            if (args[0].equalsIgnoreCase("deletar") && p.hasPermission("LuckyEconomy.Staff")) {
+                if(!(p.hasPermission("LuckyEconomy.Staff"))) { p.sendMessage("Você não tem perm"); return false; }
+                    Player target = Bukkit.getPlayer(args[1]);
+                    if (EventPlayerJoin.contains(target.getName())) {
+                        deletePlayer(target.getName());
+                        p.sendMessage(prefix + "§fO Jogador §a " + target.getName() + " §ffoi removido do banco de dados.");
+                        target.kickPlayer(prefix + "§fVocê foi removido do banco de dados por: §a" + p.getName());
+                    } else {
+                        p.sendMessage(prefix + "§fO Jogador §a" + target.getName() + "§fnão existe no banco de dados.");
+                        return false;
+                    }
             }
         }
 
         if (args.length == 3) {
-            if (args[0].equalsIgnoreCase("setar")) {
-                if (p.hasPermission("LuckyEconomy.Staff")) {
-                    String targetName = args[1];
-                    double amount = Double.parseDouble(args[2]);
-                    Player target = Bukkit.getPlayer(targetName);
-                    if (target != null) {
-                        setMoney(target, amount);
-                        p.sendMessage(prefix + "§fVocê setou o dinheiro de §a" + target.getName() + " §fpara §aR$" + format(amount));
-                    } else {
-                        p.sendMessage("§cEste usuário está offline.");
-                        return false;
-                    }
-                }
-            }
-            if (args[0].equalsIgnoreCase("adicionar")) {
-                if (p.hasPermission("LuckyEconomy.Staff")) {
-                    String targetName = args[1];
-                    double amount = Double.parseDouble(args[2]);
-                    Player target = Bukkit.getPlayer(targetName);
-                    if (target != null) {
-                        setMoney(target, (int) (getMoney(target) + amount));
-                        p.sendMessage(prefix + "§fVocê adicionou §aR$" + format(amount) + " §fna conta de §a" + target.getName());
-                    } else {
-                        p.sendMessage("§cEste usuário está offline.");
-                        return false;
-                    }
-                }
-            }
-            if(args[0].equalsIgnoreCase("pagar")) {
-                String targetName = args[1];
+            if (args[0].equalsIgnoreCase("pagar")) {
+                Player target = Bukkit.getPlayer(args[1]);
                 double amount = Double.parseDouble(args[2]);
-                Player target = Bukkit.getPlayer(targetName);
 
-                if(target == p) {
-                    sender.sendMessage("§cNão pode enviar dinheiro pra si mesmo.");
+                if (getMoney(p.getName()) < amount) {
+                    p.sendMessage(prefix + "§fVocê precisa de mais §aR$" + (format(amount - getMoney(p.getName())) + " §fpara poder pagar o player §a" + target.getName()));
                     return false;
                 }
 
-                if (target != null) {
-                    payMoney(p, amount, target);
-                    p.sendMessage(prefix + "§fVocê enviou §aR$" + amount + " §fpara §a" + target.getName());
-                    target.sendMessage(prefix + "§fVocê recebeu §aR$" + amount + " §fde §a" + p.getName());
-                } else {
-                    p.sendMessage("§cEste usuário está offline.");
+                if (target == null) {
+                    p.sendMessage("§cEste usuário está offline");
                     return false;
                 }
+
+                addMoney(target.getName(), amount);
+                removeMoney(p.getName(), amount);
+
+                p.sendMessage(prefix + "§fVocê enviou §aR$" + format(amount) + " §fpara §a" + target.getName());
+                target.sendMessage(prefix + "§fVocê recebeu §aR$" + format(amount) + " §fde §a" + p.getName());
             }
+        }
+        if (!(p.hasPermission("LuckyEconomy.Staff"))) {
+            p.sendMessage("§cVocê não tem permissão.");
+            return false;
+        }
+
+        if (args[0].equalsIgnoreCase("setar")) {
+            Player target = Bukkit.getPlayer(args[1]);
+            double amount = Double.parseDouble(args[2]);
+
+            setMoney(target.getName(), amount);
+
+            p.sendMessage(prefix + "§fVocê setou o dinheiro de §a" + target.getName() + " §fpara §aR$" + format(amount));
+        }
+
+        if (args[0].equalsIgnoreCase("remover")) {
+            Player target = Bukkit.getPlayer(args[1]);
+            double amount = Double.parseDouble(args[2]);
+
+            removeMoney(target.getName(), amount);
+
+            p.sendMessage(prefix + "§fVocê removeu §aR$ " + format(amount) + " §fde §a" + target.getName());
+        }
+        if(args[0].equalsIgnoreCase("adicionar")) {
+            Player target = Bukkit.getPlayer(args[1]);
+            double amount = Double.parseDouble(args[2]);
+
+             addMoney(target.getName(), amount);
+
+            p.sendMessage(prefix + "§fVocê adicionou §aR$ " + format(amount) + " §fpara §a" + target.getName());
         }
         return false;
     }

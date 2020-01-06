@@ -1,5 +1,0 @@
-name: LuckyEconomy
-version: 1.0
-main: com.lucky.LuckyEconomy
-commands:
-  dinheiro:

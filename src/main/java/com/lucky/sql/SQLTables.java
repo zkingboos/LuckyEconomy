@@ -1,28 +1,24 @@
 package com.lucky.sql;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import com.lucky.utils.Utilities;
+import lombok.RequiredArgsConstructor;
 
-import static com.lucky.utils.MessageUtils.prefix;
-import static com.lucky.utils.MessageUtils.sc;
-
+@RequiredArgsConstructor
 public class SQLTables {
 
-    protected static void createTable(){
-        Connection con = SQLConnection.getConnection();
-        if (con != null) {
-            PreparedStatement stm;
-            try {
-                stm = con.prepareStatement("CREATE TABLE IF NOT EXISTS `dinheiro` (`id` INTEGER PRIMARY KEY AUTOINCREMENT,`player` TEXT NULL,`quantia` DOUBLE NULL);");
-                stm.executeUpdate();
-                sc.sendMessage(prefix + "§aTabela carregada");
-            } catch (SQLException e) {
-                e.printStackTrace();
-                sc.sendMessage(prefix + "§cNão foi possivel carregar a tabela");
-            }
-        }
-    }
+    private final SQLProvider provider;
 
-    public static void createTableMoney() { createTable(); }
+    public SQLTables createMoneyTable(){
+        int result = provider.update("CREATE TABLE IF NOT EXISTS dinheiro ("+
+                "player varchar(50) PRIMARY KEY, " +
+                "quantia DOUBLE" +
+                ")");
+
+        String msg = result == -1 ?
+                "§cNão foi possivel carregar a tabela ou ela já existe."
+                : "§aTabela carregada";
+
+        Utilities.sc.sendMessage(Utilities.prefix + msg);
+        return this;
+    }
 }

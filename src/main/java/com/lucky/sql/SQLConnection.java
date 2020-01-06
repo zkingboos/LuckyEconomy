@@ -1,53 +1,55 @@
 package com.lucky.sql;
 
-import com.lucky.utils.MessageUtils;
+import com.lucky.utils.Utilities;
+import lombok.Getter;
+import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.Plugin;
+import org.sqlite.JDBC;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 
-public class SQLConnection {
+@Getter
+public abstract class SQLConnection {
 
-    private static Connection con;
-    public static String prefix = MessageUtils.prefix;
+    private Connection con;
 
-    private static void connectionStart(Plugin plugin) {
-        if (!plugin.getDataFolder().exists()) plugin.getDataFolder().mkdirs();
-        File sql = new File(plugin.getDataFolder(), "dinheiro.db");
+    private Plugin plugin;
+    private File SQLFile;
+    private String fileName;
 
-        try {
+    public SQLConnection(Plugin plugin, String fileName) {
+        this.plugin = plugin;
+        this.fileName = fileName;
+        this.SQLFile = new File(plugin.getDataFolder(), fileName);
+    }
 
-            Class.forName("org.sqlite.JDBC");
-            con = DriverManager.getConnection("jdbc:sqlite:" + sql);
-            Bukkit.getConsoleSender().sendMessage(prefix + "§fConexão com SQLite aberta com sucesso.");
-        } catch (Exception e) {
-            e.printStackTrace();
+    @SneakyThrows
+    public boolean openConnection() {
+        if (hasConnection()) return true;
+        if(!getSQLFile().exists()) plugin.saveResource(fileName, false);
+
+        DriverManager.registerDriver(new JDBC());
+        con = DriverManager.getConnection("jdbc:sqlite:" + SQLFile);
+        return !con.isClosed();
+    }
+
+    @SneakyThrows
+    public void closeConnection() {
+        ConsoleCommandSender sender = Bukkit.getConsoleSender();
+        if (hasConnection()) {
+            con.close();
+            sender.sendMessage(Utilities.prefix + "§cConexão com SQLite fechada com sucesso.");
+        } else {
+            sender.sendMessage(Utilities.prefix + "§fA Conexão já está fechada!");
         }
     }
 
-    public static void closeConnection() {
-        try {
-            if (getConnection() != null) {
-                con.close();
-                Bukkit.getConsoleSender().sendMessage(prefix + "§cConexão com SQLite fechada com sucesso.");
-            } else {
-                Bukkit.getConsoleSender().sendMessage(MessageUtils.prefix + "§fA Conexão já está fechada!");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    public static void startConnection(Plugin plugin) {
-        connectionStart(plugin);
-    }
-
-
-    public static Connection getConnection() {
-        return con;
+    @SneakyThrows
+    public boolean hasConnection() {
+        return getCon() != null && !getCon().isClosed();
     }
 }

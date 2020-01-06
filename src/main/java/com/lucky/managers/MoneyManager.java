@@ -1,107 +1,64 @@
 package com.lucky.managers;
 
-import com.lucky.sql.SQLConnection;
-import com.lucky.utils.MessageUtils;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.entity.Player;
+import com.lucky.sql.SQLProvider;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.lucky.utils.MoneyFormatter.format;
+import java.util.UUID;
+import java.util.stream.Stream;
 
 
+@RequiredArgsConstructor
 public class MoneyManager {
 
-    private static Connection con = SQLConnection.getConnection();
-    private static ConsoleCommandSender sc = MessageUtils.sc;
-    private static String prefix = MessageUtils.prefix;
-    private static PreparedStatement stm;
+    private final SQLProvider provider;
 
-
-    public static void newAccount(String player) {
-
-        try {
-            stm = con.prepareStatement("INSERT INTO `dinheiro`(`player`, `quantia`) VALUES (?,?)");
-            stm.setString(1, player.toLowerCase());
-            stm.setDouble(2, 0);
-            stm.executeUpdate();
-            sc.sendMessage(prefix + " §fO player §a" + player + " §f foi criado com sucesso.");
-        } catch (SQLException e) {
-            sc.sendMessage(prefix + "§cNão foi possivel inserir o player: §f" + player + "§a no banco de dados!");
-        }
+    public int setMoney(UUID id, Double quantia) {
+        if(hasAccount(id)) provider.update("update dinheiro set quantia=? where player=?", quantia, id.toString());
+        else provider.update("insert into dinheiro(player,quantia) values (?,?)", id.toString(), quantia);
+        return 0;
     }
 
-    public static void setMoney(String player, Double quantia) {
-            try {
-                stm = con.prepareStatement("UPDATE `dinheiro` SET `quantia` = ? WHERE `player` = ?");
-                stm.setDouble(1, quantia);
-                stm.setString(2, player.toLowerCase());
-                stm.executeUpdate();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                sc.sendMessage(prefix + "§cNão foi possivel setar o dinheiro do jogador");
-            }
+    public boolean hasAccount(UUID id) {
+        return provider.query(
+                "select player from dinheiro where player=?",
+                set -> true,
+                id.toString()
+        ).orElse(false);
     }
 
-    public static Double getMoney(String player){
-            try {
-                stm = con.prepareStatement("SELECT * FROM `dinheiro` WHERE `player` = ?");
-                stm.setString(1, player.toLowerCase());
-                ResultSet rs = stm.executeQuery();
-                while (rs.next()) {
-                    return rs.getDouble("quantia");
-                }
-                return 0.0;
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return 0.0;
-            }
+    public Double getMoney(UUID id) {
+        return provider.query(
+                "select quantia from dinheiro where player=?",
+                set -> set.getDouble("quantia"),
+                id.toString()
+        ).orElse(0.0);
     }
 
-    public static void addMoney(String player, Double quantia){
-            setMoney(player, getMoney(player) + quantia);
+    public int addMoney(UUID id, Double quantia) {
+        return setMoney(id, getMoney(id) + quantia);
     }
 
-    public static void removeMoney(String player, Double quantia){
-            setMoney(player, getMoney(player) - quantia);
+    public int removeMoney(UUID id, Double quantia) {
+        return setMoney(id, getMoney(id) - quantia);
     }
 
-    public static void deletePlayer(String player){
-
-            try {
-                stm = con.prepareStatement("DELETE FROM `dinheiro` WHERE `player` = ?");
-                stm.setString(1, player.toLowerCase());
-                stm.executeUpdate();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                sc.sendMessage(prefix + "§cNão foi possivel remover o jogador §f" + player + "§c do banco de dados!");
-            }
+    public int deletePlayer(UUID id) {
+        return provider.update("delete from dinheiro where player=?", id.toString());
     }
 
-    public static List<String> getTops(){
+    public Stream<TemporaryUser> getTops() {
+        return provider.map("SELECT * FROM `dinheiro` ORDER BY `quantia` DESC LIMIT 10", it -> {
+                String id = it.getString("player");
+                Double money = it.getDouble("quantia");
+                return new TemporaryUser(id, money);
+        }).get();
+    }
 
-        List<String> tops = new ArrayList<>();
-        try {
-            stm = con.prepareStatement("SELECT * FROM `dinheiro` ORDER BY `quantia` DESC");
-            ResultSet rs = stm.executeQuery();
-
-            int i = 0;
-            while (rs.next()) {
-                if (i <= 10){
-                    i++;
-                    tops.add("§f" + i + "º §3" + rs.getString("player") + ":§b " + rs.getDouble("quantia"));
-                    //tops.add("§a" + i + "§2º §a" + rs.getString("player").substring(0, 1).toUpperCase() + rs.getString("player").substring(1) + " §7»§f " + format(rs.getDouble("quantia")));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            sc.sendMessage(prefix + "§cNão foi possivel carregar o top dinheiro");
-        }
-        return tops;
+    @AllArgsConstructor @Getter
+    public class TemporaryUser {
+        private String id;
+        private Double money;
     }
 }
